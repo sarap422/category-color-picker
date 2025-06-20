@@ -1,0 +1,2 @@
+# Category-Color-Picker
+Category Color Pickerは、WordPressのカテゴリーに色を設定して、フロントエンドの投稿一覧やカテゴリーリンクに自動的に色を反映させるプラグインです。
