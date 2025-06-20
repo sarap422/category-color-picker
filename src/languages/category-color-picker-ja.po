@@ -1,0 +1,79 @@
+# Category Color Picker Japanese Translation
+# Copyright (C) 2025
+# This file is distributed under the GPL v2 or later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Category Color Picker 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-01-01 12:00+0000\n"
+"PO-Revision-Date: 2025-01-01 12:00+0000\n"
+"Last-Translator: sarap422\n"
+"Language-Team: Japanese\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+msgid "Category Color"
+msgstr "カテゴリーカラー"
+
+msgid "Category Color Settings"
+msgstr "カテゴリーカラー設定"
+
+msgid "Select the color to use for this category."
+msgstr "このカテゴリーに使用する色を選択してください。"
+
+msgid "Configure selectors for category colors"
+msgstr "カテゴリーカラーを反映するセレクタを設定する"
+
+msgid "Settings saved."
+msgstr "設定を保存しました。"
+
+msgid "CSS Selectors for Category Colors"
+msgstr "カテゴリーカラーを反映するCSSセレクタ"
+
+msgid "Set CSS selectors to apply category colors."
+msgstr "カテゴリーカラーを適用するCSSセレクタを設定してください。"
+
+msgid "The {$slug} part will be replaced with the category slug."
+msgstr "{$slug} の部分がカテゴリースラッグに置き換えられます。"
+
+msgid "Separate multiple selectors with commas."
+msgstr "複数のセレクタはカンマで区切って指定してください。"
+
+msgid "Usage Example"
+msgstr "使用例"
+
+msgid "CSS example generated with current settings:"
+msgstr "現在の設定で生成されるCSS例："
+
+msgid "Common Selectors"
+msgstr "よく使われるセレクタ"
+
+msgid "For VK All in One Expansion Unit:"
+msgstr "VK All in One Expansion Unit用："
+
+msgid "For Post Type & Taxonomy Filter:"
+msgstr "Post Type & Taxonomy Filter用："
+
+msgid "General category links:"
+msgstr "一般的なカテゴリーリンク："
+
+msgid "Category List"
+msgstr "カテゴリー一覧"
+
+msgid "Go to Category Management"
+msgstr "カテゴリー管理画面へ"
+
+msgid "Color"
+msgstr "色"
+
+msgid "Not set"
+msgstr "未設定"
+
+msgid "You do not have sufficient permissions to access this page."
+msgstr "このページにアクセスする権限がありません。"
+
+msgid "Security check failed."
+msgstr "セキュリティチェックに失敗しました。"

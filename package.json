@@ -1,0 +1,37 @@
+{
+  "name": "category-color-picker",
+  "version": "1.0.3",
+  "description": "WordPressのカテゴリーに色を設定して、フロントエンドの投稿一覧やカテゴリーリンクに自動的に色を反映させるプラグイン",
+  "main": "src/category-color-picker.php",
+  "scripts": {
+    "build": "npm run build:dist",
+    "build:dist": "node scripts/build-dist.js",
+    "zip": "node scripts/create-zip.js",
+    "deploy": "npm run build && npm run zip",
+    "lint:php": "phpcs --standard=WordPress src/",
+    "lint:js": "eslint src/*.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarap422/Category-Color-Picker.git"
+  },
+  "keywords": [
+    "wordpress",
+    "plugin",
+    "category",
+    "color",
+    "picker",
+    "css"
+  ],
+  "author": "sarap422",
+  "license": "GPL-2.0-or-later",
+  "bugs": {
+    "url": "https://github.com/sarap422/Category-Color-Picker/issues"
+  },
+  "homepage": "https://github.com/sarap422/Category-Color-Picker#readme",
+  "devDependencies": {
+    "archiver": "^5.3.1",
+    "fs-extra": "^11.1.1"
+  }
+}
