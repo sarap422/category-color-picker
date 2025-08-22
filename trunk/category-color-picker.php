@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Category Color Picker
  * Description: Add a color picker to categories and reflect category colors in post listings and other selectors.
- * Version: 1.0.4
+ * Version: 1.0.6
  * Author: sarap422
  * Text Domain: category-color-picker
  * Requires at least: 5.0
@@ -49,14 +49,13 @@ class CategoryColorPicker {
     // カテゴリー一覧に色列を追加
     add_filter('manage_edit-category_columns', array($this, 'add_category_color_column'));
     add_filter('manage_category_custom_column', array($this, 'show_category_color_column'), 10, 3);
-    add_action('admin_head', array($this, 'category_color_column_styles'));
 
     // 管理画面にメニューを追加
     add_action('admin_menu', array($this, 'add_admin_menu'));
     add_action('admin_init', array($this, 'register_settings'));
 
-    // フロントエンドでCSSを出力
-    add_action('wp_head', array($this, 'output_category_colors_css'));
+    // フロントエンドでCSSをエンキュー（修正版）
+    add_action('wp_enqueue_scripts', array($this, 'enqueue_category_colors_css'));
   }
 
   /**
@@ -144,12 +143,78 @@ class CategoryColorPicker {
   }
 
   /**
+   * フロントエンドでカテゴリーカラーのCSSをエンキュー
+   */
+  public function enqueue_category_colors_css() {
+    // 空のスタイルシートをエンキュー（ダミーファイルでもOK）
+    wp_register_style(
+      'category-color-picker-frontend',
+      false, // URLをfalseにしてインラインスタイル専用に
+      array(),
+      '1.0.6'
+    );
+    wp_enqueue_style('category-color-picker-frontend');
+    
+    // インラインCSSを追加
+    $css = $this->generate_category_colors_css();
+    if (!empty($css)) {
+      wp_add_inline_style('category-color-picker-frontend', $css);
+    }
+  }
+
+  /**
+   * カテゴリーカラーのCSSを生成
+   */
+  private function generate_category_colors_css() {
+    $categories = get_categories(array('hide_empty' => false));
+
+    if (empty($categories)) {
+      return '';
+    }
+
+    // 設定されたセレクタを取得
+    $default_selectors = '.post-meta-fields [rel*="tag"][href*="category/{$slug}"],
+.su-post-meta-fields [rel*="tag"][href*="category/{$slug}"],
+.veu_postList ul.postList .postList_terms a[href*="category/{$slug}"],
+.pt-cv-wrapper .pt-cv-view [class*="pt-cv-tax"][href*="category/{$slug}"]';
+
+    $selectors_template = get_option('category_color_selectors', $default_selectors);
+
+    $css = "/* Category Colors CSS */\n";
+
+    // デフォルトのカテゴリー色
+    $default_tag_selectors = str_replace('{$slug}', '', $selectors_template);
+    $css .= $default_tag_selectors . " {\n";
+    $css .= "    background: hsla(0, 0%, 96%, 1);\n";
+    $css .= "    color: var(--c-gray, hsl(223, 6%, 50%));\n";
+    $css .= "}\n\n";
+
+    foreach ($categories as $category) {
+      $color = get_term_meta($category->term_id, 'category_color', true);
+
+      if ($color) {
+        $text_color = $this->get_text_color($color);
+        $slug = $category->slug;
+
+        $category_selectors = str_replace('{$slug}', $slug, $selectors_template);
+
+        $css .= $category_selectors . " {\n";
+        $css .= "    background: {$color} !important;\n";
+        $css .= "    color: {$text_color} !important;\n";
+        $css .= "}\n\n";
+      }
+    }
+
+    return $css;
+  }
+
+  /**
    * 管理画面にメニューを追加
    */
   public function add_admin_menu() {
     add_options_page(
-      wp_kses_post('Category Color Settings', 'category-color-picker'),
-      wp_kses_post('Category Color', 'category-color-picker'),
+      esc_html__('Category Color Settings', 'category-color-picker'),
+      esc_html__('Category Color', 'category-color-picker'),
       'manage_options',
       'category-color-settings',
       array($this, 'settings_page')
@@ -306,54 +371,6 @@ class CategoryColorPicker {
   }
 
   /**
-   * フロントエンドでカテゴリーカラーのCSSを出力
-   */
-  public function output_category_colors_css() {
-    $categories = get_categories(array('hide_empty' => false));
-
-    if (empty($categories)) {
-      return;
-    }
-
-    // 設定されたセレクタを取得
-    $default_selectors = '.post-meta-fields [rel*="tag"][href*="category/{$slug}"],
-.su-post-meta-fields [rel*="tag"][href*="category/{$slug}"],
-.veu_postList ul.postList .postList_terms a[href*="category/{$slug}"],
-.pt-cv-wrapper .pt-cv-view [class*="pt-cv-tax"][href*="category/{$slug}"]';
-
-    $selectors_template = get_option('category_color_selectors', $default_selectors);
-
-    echo "<style type='text/css'>\n";
-    echo "/* Category Colors CSS */\n";
-
-    // デフォルトのタグ色
-    $default_tag_selectors = str_replace('[href*="category/{$slug}"]', '', $selectors_template);
-    $default_tag_selectors = str_replace('{$slug}', '', $default_tag_selectors);
-    echo wp_kses_post($default_tag_selectors . " {\n");
-    echo "    background: hsla(0, 0%, 96%, 1);\n";
-    echo "    color: var(--c-gray, hsl(223, 6%, 50%));\n";
-    echo "}\n\n";
-
-    foreach ($categories as $category) {
-      $color = get_term_meta($category->term_id, 'category_color', true);
-
-      if ($color) {
-        $text_color = $this->get_text_color($color);
-        $slug = $category->slug;
-
-        $category_selectors = str_replace('{$slug}', $slug, $selectors_template);
-
-        echo wp_kses_post($category_selectors . " {\n");
-        echo wp_kses_post("    background: {$color} !important;\n");
-        echo wp_kses_post("    color: {$text_color} !important;\n");
-        echo wp_kses_post("}\n\n");
-      }
-    }
-
-    echo "</style>\n";
-  }
-
-  /**
    * 背景色に基づいて適切なテキスト色を計算
    */
   private function get_text_color($hex_color) {
@@ -368,8 +385,8 @@ class CategoryColorPicker {
     // 相対輝度を計算
     $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
 
-    // 輝度が0.5より高い場合は暗いテキスト、そうでない場合は白テキスト
-    return $luminance > 0.5 ? 'var(--c-text, hsl(223, 6%, 13%))' : '#FFF';
+    // 輝度が0.6より高い場合は暗いテキスト、そうでない場合は白テキスト
+    return $luminance > 0.6 ? 'var(--c-text, hsl(223, 6%, 13%))' : '#FFF';
   }
 }
 

@@ -4,7 +4,7 @@ Tags: category, color, picker, styling, css
 Requires at least: 5.0
 Tested up to: 6.8
 Requires PHP: 7.4
-Stable tag: 1.0.4
+Stable tag: 1.0.6
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,21 +58,29 @@ Category Color Pickerは、WordPressのカテゴリーに色を設定して、�
 
 == Screenshots ==
 
-1. カテゴリー編集画面のカラーピッカー
-2. カテゴリー一覧での色表示
-3. セレクタ設定画面
-4. フロントエンドでの色反映例
+1. カテゴリー編集画面のカラーピッカー        ← screenshot-1.png
+2. カテゴリー一覧での色表示                  ← screenshot-2.png  
+3. セレクタ設定画面                          ← screenshot-3.png
+4. フロントエンドでの色反映例                ← screenshot-4.png
 
 == Changelog ==
 
-= 1.0.0 =
+= 1.0.6 =
+* タグを対象から排除
+
+= 1.0.5 =
+* wp_enqueue_style()を使用したCSS出力方法に変更（プラグインチェック対応）
+* テキスト色の輝度閾値を0.6に調整（より読みやすく）
+* プラグインの説明とメッセージを日本語化
+* コードの最適化とWordPress標準への準拠
+
+= 1.0.4 =
+* バグ修正と安定性の向上
+* CSSセレクター処理の強化
+* エラーハンドリングの改善
+
+= 1.0.3 =
 * 初回リリース
-* カテゴリーカラーピッカー機能
+* カラーピッカー統合
 * 自動テキスト色調整
-* カスタマイズ可能なセレクタ
-* カテゴリー一覧色表示
-
-== Upgrade Notice ==
-
-= 1.0.0 =
-初回リリースです。
+* カスタマイズ可能なCSSセレクター
