@@ -2,7 +2,7 @@
 Contributors: sarap422
 Tags: category, color, picker, noindex, styling, css
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.2.0
 License: GPL v2 or later

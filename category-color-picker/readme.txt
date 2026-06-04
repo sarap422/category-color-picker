@@ -2,109 +2,109 @@
 Contributors: sarap422
 Tags: category, color, picker, noindex, styling, css
 Requires at least: 5.0
-Tested up to: 6.8
+Tested up to: 7.0
 Requires PHP: 7.4
 Stable tag: 1.2.0
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-WordPressのカテゴリーにカラーピッカーを追加し、投稿一覧などに色を反映させるプラグインです。Noindex 設定機能付き。
+Add a color picker to WordPress categories and reflect category colors in post listings and links. Includes per-category noindex settings.
 
 == Description ==
 
-Category Color Picker は、WordPress のカテゴリーに色を設定して、フロントエンドの投稿一覧やカテゴリーリンクに自動的に色を反映させるプラグインです。
+Category Color Picker lets you assign a color to each WordPress category and automatically applies that color to post listings and category links on the front end.
 
-= 主な機能 =
+= Main features =
 
-* カテゴリー編集画面にカラーピッカーを追加
-* 設定した色をフロントエンドに自動反映
-* 相対輝度に基づく自動テキスト色調整
-* カスタマイズ可能な CSS セレクタ
-* カテゴリー一覧への「色」「ID」「Noindex」列の追加
-* カテゴリー一覧を ID 列でソート可能
-* カテゴリー単位で Noindex を設定（アーカイブページ・投稿ページ・タグ/日付アーカイブに対応）
-* カテゴリー（色・Noindex 設定含む）の JSON エクスポート / インポート
+* Adds a color picker to the category edit screen
+* Automatically reflects the chosen color on the front end
+* Automatic text color adjustment based on relative luminance
+* Customizable CSS selectors
+* Adds "Color", "ID" and "Noindex" columns to the category list
+* Sortable by the ID column
+* Per-category noindex setting (applies to the category archive, single posts in that category, and tag/date archives that contain those posts)
+* JSON export / import of categories (including color and noindex settings)
 
-= 対応プラグイン・テーマ =
+= Compatible plugins and themes =
 
 * VK All in One Expansion Unit
 * Content Views
-* 一般的な WordPress テーマ
-* カスタムセレクタで任意の要素に対応
+* General WordPress themes
+* Any element via custom selectors
 
-= 使い方 =
+= Usage =
 
-1. プラグインを有効化
-2. 「投稿」→「カテゴリー」でカテゴリーを編集
-3. カラーピッカーで色を選択
-4. 必要に応じて「Noindex」チェックボックスをオン
-5. 「設定」→「カテゴリーカラー」でセレクタをカスタマイズ（オプション）
+1. Activate the plugin
+2. Go to Posts > Categories and edit a category
+3. Pick a color with the color picker
+4. Optionally enable the "Noindex" checkbox
+5. Optionally customize selectors under Settings > Category Color
 
 == Installation ==
 
-1. プラグインファイルを `/wp-content/plugins/category-color-picker` ディレクトリにアップロード
-2. WordPress 管理画面の「プラグイン」メニューからプラグインを有効化
-3. 「投稿」→「カテゴリー」でカテゴリーの色・Noindex を設定
+1. Upload the plugin files to the `/wp-content/plugins/category-color-picker` directory
+2. Activate the plugin through the Plugins menu in WordPress
+3. Set the color and noindex for each category under Posts > Categories
 
 == Frequently Asked Questions ==
 
-= どのテーマでも動作しますか？ =
+= Does it work with any theme? =
 
-はい、WordPress 標準のカテゴリー表示を使用しているテーマであれば動作します。カスタムセレクタの設定により、特定のテーマやプラグインにも対応できます。
+Yes. It works with any theme that uses the standard WordPress category output. With custom selectors, it can also support specific themes and plugins.
 
-= VK All in One Expansion Unit の代替になりますか？ =
+= Can it replace VK All in One Expansion Unit? =
 
-はい、VK All in One Expansion Unit のカテゴリーカラー機能の代替として使用できます。より柔軟なセレクタ設定が可能です。
+Yes. It can be used as an alternative to the category color feature of VK All in One Expansion Unit, with more flexible selector settings.
 
-= セレクタをカスタマイズできますか？ =
+= Can I customize the selectors? =
 
-はい、「設定」→「カテゴリーカラー」から自由に CSS セレクタを設定できます。
+Yes. You can freely set CSS selectors under Settings > Category Color.
 
-= Noindex はどのページに適用されますか？ =
+= Which pages does noindex apply to? =
 
-カテゴリーアーカイブページ、そのカテゴリーに属する投稿ページ、タグ・年月日アーカイブページ（対象カテゴリーの投稿を含む場合）に `<meta name="robots" content="noindex" />` を出力します。
+It outputs `<meta name="robots" content="noindex" />` on the category archive page, single posts belonging to that category, and tag/date archive pages that contain posts in the target category.
 
-= Noindex の設定はどこで確認できますか？ =
+= Where can I check the noindex setting? =
 
-カテゴリー一覧の「Noindex」列で確認できます。設定済みのカテゴリーは赤字で「noindex」と表示されます。
+You can check it in the "Noindex" column of the category list. Categories with the setting enabled show "noindex" in red.
 
 == Screenshots ==
 
-1. カテゴリー編集画面のカラーピッカーと Noindex 設定
-2. カテゴリー一覧での色・ID・Noindex 列表示
-3. セレクタ設定画面
-4. フロントエンドでの色反映例
+1. Color picker and noindex setting on the category edit screen
+2. Color, ID and Noindex columns in the category list
+3. Selector settings screen
+4. Category colors reflected on the front end
 
 == Changelog ==
 
 = 1.2.0 =
-* カテゴリーの JSON エクスポート / インポート機能を追加（カテゴリー一覧画面の右上にボタンを設置）
-* エクスポートは全カテゴリーを対象（名前・スラッグ・親・説明・色・Noindex を出力）
-* インポートはスラッグ基準で再解決。既存カテゴリーは色・Noindex のみ上書き、未存在は新規作成
-* includes/ にロジックを分離（純粋ロジックはユニットテスト対応）
+* Added JSON export / import for categories (buttons placed at the top right of the category list screen)
+* Export covers all categories (name, slug, parent, description, color, noindex)
+* Import resolves categories by slug; for existing categories only color and noindex are overwritten, missing categories are created
+* Separated logic into includes/ (pure logic is unit tested)
 
 = 1.1.0 =
-* カテゴリー一覧にカラム「ID」「Noindex」を追加
-* カラム順を「名前・スラッグ・色・説明・カウント・ID・Noindex」に変更
-* ID 列のソートに対応
-* Noindex 機能を追加（カテゴリー単位で meta robots noindex を出力）
+* Added "ID" and "Noindex" columns to the category list
+* Reordered columns to Name, Slug, Color, Description, Count, ID, Noindex
+* Made the ID column sortable
+* Added noindex feature (outputs meta robots noindex per category)
 
 = 1.0.6 =
-* タグを対象から排除
+* Excluded tags from the target
 
 = 1.0.5 =
-* wp_enqueue_style() を使用した CSS 出力方法に変更（プラグインチェック対応）
-* テキスト色の輝度閾値を 0.6 に調整（より読みやすく）
-* プラグインの説明とメッセージを日本語化
-* コードの最適化と WordPress 標準への準拠
+* Switched to wp_enqueue_style() for CSS output (Plugin Check compliance)
+* Adjusted the text color luminance threshold to 0.6 for better readability
+* Translated plugin descriptions and messages into Japanese
+* Code optimization and compliance with WordPress standards
 
 = 1.0.4 =
-* バグ修正と安定性の向上
-* CSS セレクター処理の強化
-* エラーハンドリングの改善
+* Bug fixes and stability improvements
+* Improved CSS selector handling
+* Improved error handling
 
 = 1.0.3 =
-* 初回リリース
-* カラーピッカー統合
-* 自動テキスト色調整
-* カスタマイズ可能な CSS セレクター
+* Initial release
+* Color picker integration
+* Automatic text color adjustment
+* Customizable CSS selectors

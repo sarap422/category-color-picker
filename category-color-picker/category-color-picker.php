@@ -55,13 +55,16 @@ if ($ccp_tools_available) {
   });
 }
 
-class CategoryColorPicker {
+class CategoryColorPicker
+{
 
-  public function __construct() {
+  public function __construct()
+  {
     add_action('init', array($this, 'init'));
   }
 
-  public function init() {
+  public function init()
+  {
     // initフックで翻訳を読み込み
     load_plugin_textdomain(
       'category-color-picker',
@@ -107,7 +110,8 @@ class CategoryColorPicker {
   /**
    * 新規カテゴリー追加画面にカラーピッカーを追加
    */
-  public function add_category_color_field() {
+  public function add_category_color_field()
+  {
 ?>
     <div class="form-field">
       <label for="category_color"><?php esc_html_e('Category Color', 'category-color-picker'); ?></label>
@@ -123,7 +127,8 @@ class CategoryColorPicker {
   /**
    * カテゴリー編集画面にカラーピッカーを追加
    */
-  public function edit_category_color_field($term) {
+  public function edit_category_color_field($term)
+  {
     $color = get_term_meta($term->term_id, 'category_color', true);
     if (!$color) {
       $color = '#002A7B';
@@ -147,7 +152,8 @@ class CategoryColorPicker {
   /**
    * カテゴリーカラーを保存
    */
-  public function save_category_color($term_id) {
+  public function save_category_color($term_id)
+  {
     // 権限チェック
     if (!current_user_can('manage_categories')) {
       return;
@@ -178,20 +184,35 @@ class CategoryColorPicker {
   }
 
   /**
-   * 管理画面でカラーピッカーのスクリプトを読み込み
+   * 管理画面でカラーピッカーのスクリプトとスタイルを読み込み
    */
-  public function enqueue_admin_scripts($hook) {
+  public function enqueue_admin_scripts($hook)
+  {
     if ($hook === 'edit-tags.php' || $hook === 'term.php') {
       wp_enqueue_style('wp-color-picker');
       wp_enqueue_script('wp-color-picker');
-      wp_enqueue_script('category-color-picker', plugin_dir_url(__FILE__) . 'category-color-picker.js', array('wp-color-picker'), CCP_VERSION, true);
+      wp_enqueue_script(
+        'category-color-picker',
+        plugin_dir_url(__FILE__) . '/js/category-color-picker.js',
+        array('jquery', 'jquery-ui-sortable'),
+        CCP_VERSION,
+        true
+      );
+
+      wp_enqueue_style(
+        'category-color-picker',
+        plugin_dir_url(__FILE__) . '/css/category-color-picker.css',
+        array(),
+        CCP_VERSION
+      );
     }
   }
 
   /**
    * フロントエンドでカテゴリーカラーのCSSをエンキュー
    */
-  public function enqueue_category_colors_css() {
+  public function enqueue_category_colors_css()
+  {
     // 空のスタイルシートをエンキュー（ダミーファイルでもOK）
     wp_register_style(
       'category-color-picker-frontend',
@@ -200,7 +221,7 @@ class CategoryColorPicker {
       CCP_VERSION
     );
     wp_enqueue_style('category-color-picker-frontend');
-    
+
     // インラインCSSを追加
     $css = $this->generate_category_colors_css();
     if (!empty($css)) {
@@ -211,7 +232,8 @@ class CategoryColorPicker {
   /**
    * カテゴリーカラーのCSSを生成
    */
-  private function generate_category_colors_css() {
+  private function generate_category_colors_css()
+  {
     $categories = get_categories(array('hide_empty' => false));
 
     if (empty($categories)) {
@@ -257,7 +279,8 @@ class CategoryColorPicker {
   /**
    * 管理画面にメニューを追加
    */
-  public function add_admin_menu() {
+  public function add_admin_menu()
+  {
     add_options_page(
       esc_html__('Category Color Settings', 'category-color-picker'),
       esc_html__('Category Color', 'category-color-picker'),
@@ -270,7 +293,8 @@ class CategoryColorPicker {
   /**
    * 設定を登録
    */
-  public function register_settings() {
+  public function register_settings()
+  {
     register_setting(
       'category_color_settings',
       'category_color_selectors',
@@ -283,14 +307,16 @@ class CategoryColorPicker {
   /**
    * カテゴリーカラーセレクターのサニタイゼーション
    */
-  public function sanitize_category_color_selectors($input) {
+  public function sanitize_category_color_selectors($input)
+  {
     return sanitize_textarea_field($input);
   }
 
   /**
    * 設定画面を表示
    */
-  public function settings_page() {
+  public function settings_page()
+  {
     // 権限チェック
     if (!current_user_can('manage_options')) {
       wp_die(esc_html__('You do not have sufficient permissions to access this page.', 'category-color-picker'));
@@ -354,13 +380,14 @@ class CategoryColorPicker {
       <h2><?php esc_html_e('Category List', 'category-color-picker'); ?></h2>
       <p><a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=category')); ?>" class="button"><?php esc_html_e('Go to Category Management', 'category-color-picker'); ?></a></p>
     </div>
-<?php
+  <?php
   }
 
   /**
    * サンプルCSS生成
    */
-  private function generate_sample_css($selectors) {
+  private function generate_sample_css($selectors)
+  {
     $sample_slug = 'sample-category';
     $sample_color = '#002A7B';
 
@@ -384,7 +411,8 @@ class CategoryColorPicker {
    * カテゴリー一覧のカラム構成を変更
    * 順序: 名前 | スラッグ | 色 | 説明 | カウント | ID | Noindex
    */
-  public function add_category_color_column($columns) {
+  public function add_category_color_column($columns)
+  {
     // WordPress デフォルト列: name, description, slug, posts（カウント）
     // 目標順: name, slug, color, description, posts, id, noindex
     $new_columns = array();
@@ -425,7 +453,8 @@ class CategoryColorPicker {
   /**
    * ID列をソート可能にする（Color・Noindex列はソート不要）
    */
-  public function add_sortable_columns($sortable) {
+  public function add_sortable_columns($sortable)
+  {
     $sortable['category_id'] = 'term_id';
     return $sortable;
   }
@@ -433,7 +462,8 @@ class CategoryColorPicker {
   /**
    * カテゴリー一覧の各カスタム列にデータを表示
    */
-  public function show_category_color_column($content, $column_name, $term_id) {
+  public function show_category_color_column($content, $column_name, $term_id)
+  {
     if ($column_name === 'color') {
       $color = get_term_meta($term_id, 'category_color', true);
       if ($color) {
@@ -472,7 +502,8 @@ class CategoryColorPicker {
   /**
    * 新規カテゴリー追加画面に Noindex チェックボックスを追加
    */
-  public function add_category_noindex_field() {
+  public function add_category_noindex_field()
+  {
   ?>
     <div class="form-field">
       <label for="category_noindex">
@@ -489,7 +520,8 @@ class CategoryColorPicker {
   /**
    * カテゴリー編集画面に Noindex チェックボックスを追加
    */
-  public function edit_category_noindex_field($term) {
+  public function edit_category_noindex_field($term)
+  {
     $noindex = get_term_meta($term->term_id, 'category_noindex', true);
   ?>
     <tr class="form-field">
@@ -506,13 +538,14 @@ class CategoryColorPicker {
         </p>
       </td>
     </tr>
-  <?php
+<?php
   }
 
   /**
    * Noindex フラグを保存
    */
-  public function save_category_noindex($term_id) {
+  public function save_category_noindex($term_id)
+  {
     if (!current_user_can('manage_categories')) {
       return;
     }
@@ -543,7 +576,8 @@ class CategoryColorPicker {
    *   - 投稿ページ（そのカテゴリーに属するもの）
    *   - タグ・年月日アーカイブページ（指定カテゴリーの投稿を含む場合）
    */
-  public function output_noindex_meta() {
+  public function output_noindex_meta()
+  {
     // noindex 設定済みカテゴリーを取得
     $noindex_ids = $this->get_noindex_category_ids();
 
@@ -584,7 +618,8 @@ class CategoryColorPicker {
    *
    * @return int[]
    */
-  private function get_noindex_category_ids() {
+  private function get_noindex_category_ids()
+  {
     static $cache = null;
     if ($cache !== null) {
       return $cache;
@@ -609,7 +644,8 @@ class CategoryColorPicker {
   /**
    * 背景色に基づいて適切なテキスト色を計算
    */
-  private function get_text_color($hex_color) {
+  private function get_text_color($hex_color)
+  {
     // #を除去
     $hex_color = ltrim($hex_color, '#');
 

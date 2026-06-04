@@ -1,0 +1,5 @@
+.search-form:has(+#ccp-tools) { display:inline-flex; margin-left:35.6%; }
+#ccp-tools { float:right; display:inline-flex; margin-top:7px; }
+#ccp-tools:after { content:""; display:table; clear:both; }
+#ccp-tools .button { width:7rem; background:#FFF; }
+#ccp-tools .button + .button { margin-left:.5rem; }

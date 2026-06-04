@@ -39,7 +39,7 @@ class Category_Color_Tools {
 
     wp_enqueue_script(
       'category-color-tools',
-      plugin_dir_url(dirname(__FILE__)) . 'category-color-tools.js',
+      plugin_dir_url(dirname(__FILE__)) . '/js/category-color-tools.js',
       array('jquery'),
       CCP_VERSION,
       true
