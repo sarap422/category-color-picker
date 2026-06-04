@@ -1,44 +1,233 @@
-# WordPress
-wp-config.php
-wp-content/uploads/
-wp-content/cache/
-wp-content/backup-db/
-wp-content/advanced-cache.php
-wp-content/wp-cache-config.php
+# ━━━━━━━━━━━━━━━━━━━
+# .gitignore
+# ━━━━━━━━━━━━━━━━━━━
 
-# Plugin specific
-dist/category-color-picker.zip
+# ───────────────────
+# Claude, Settings
+# ───────────────────
+CLAUDE*
+.claude/
+.serena/
+claudedocs/
+settings.local.json
+base.yml
+base.yml.csv
+config.py
+.map
 
-# Development
-node_modules/
-vendor/
+
+# ───────────────────
+# Security & Private Information (重要！)
+# ───────────────────
+# 環境変数ファイル
 .env
+.env/
+.env.*
 .env.local
+.env.*.local
 
-# IDE
+# 認証情報
+.npmrc
+.yarnrc
+
+# 秘密鍵・証明書
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+id_rsa
+
+# パスワード・トークン
+*_token.txt
+aws_access_key_id
+credentials.csv
+credentials.json
+google-service-account.json
+secrets.json
+id_rsa
+
+
+# ───────────────────
+# Personal Information
+# ───────────────────
+# 個人メモ・ToDo
+TODO.md
+NOTES.md
+PRIVATE.md
+*-private.*
+
+# 顧客情報・連絡先
+contacts/
+clients/
+customer-data/
+
+
+# ───────────────────
+# データベース
+# ───────────────────
+# SQLite データベース
+*.db
+
+# ダンプ・実体ファイル
+db.sqlite3
+dump.sql
+
+
+# ───────────────────
+# Git
+# ───────────────────
+.git/
+gitignore/
+
+
+# ───────────────────
+# Node & npm, 依存関係
+# ───────────────────
+node_modules/
+.npmignore
+npmignore/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+yarn.lock
+__pycache__/
+*.pyc
+vendor/
+
+
+# ───────────────────
+# Build & Distribution
+# ───────────────────
+dist/
+build/
+*.tgz
+
+# Rust
+target/
+src-tauri/target/
+
+
+# ───────────────────
+# OS Files,
+# ───────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+
+# ───────────────────
+# Temporary & Conflicted
+# ───────────────────
+# Temporary files
+*.tmp
+*.bak
+*.cache
+.cache/
+temp/
+tmp/
+
+# Conflicted files
+*\[conflicted*
+*\(conflicted*
+
+
+# ───────────────────
+# Development & Testing
+# ───────────────────
+# デバッグ・ログ
+*.debug
+debug.*
+debug/
+*.log
+log.*
+log/
+*.logs
+logs.*
+logs/
+deblog/
+deblogs/
+error_log
+
+# テストファイル
+coverage/
+test-results/
+
+# レビューファイル
+*review.txt
+review*.txt
+
+
+# ───────────────────
+# Editor & IDE
+# ───────────────────
 .vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
-
-# OS
-.DS_Store
-Thumbs.db
-*.log
-
-# Temporary files
-*.tmp
-*.temp
+*.swp
+*.swo
 *~
+.project
+.settings/
+.classpath
+.prettierignore
+.husky
 
-# Build artifacts
-build/
-*.min.js
-*.min.css
 
-# SVN (WordPress.org)
-.svn/
+# ───────────────────
+# Outputs（出力ファイル）
+# ───────────────────
+output.*.json
+output/
+outputs/
+record.*.json
+record/
+records/
+report.*.json
+report/
+reports/
 
-# Backup files
-*.bak
+
+# ───────────────────
+# Backup Files
+# ───────────────────
+*_backup
+*_old
 *.backup
+backup/
+
+
+# ───────────────────
+# Archives
+# ───────────────────
+*.zip
+*.tar
+*.tar.gz
+*.rar
+*.7z
+
+
+# ───────────────────
+# Font-Specific
+# ───────────────────
+# フォント生成の中間ファイル
+*.afm
+*.pfm
+*.inf
+
+# FontForge関連
+*.sfd.bak
+
+
+# ───────────────────
+# Documentation (必要に応じて除外解除)
+# ───────────────────
+# drafts/
+# planning/

@@ -77,3 +77,44 @@ msgstr "このページにアクセスする権限がありません。"
 
 msgid "Security check failed."
 msgstr "セキュリティチェックに失敗しました。"
+
+# --- 1.2.0: Export / Import ---
+
+msgid "Export"
+msgstr "エクスポート"
+
+msgid "Import"
+msgstr "インポート"
+
+msgid "This will overwrite the color and noindex settings of existing categories with matching slugs. Continue?"
+msgstr "同じスラッグの既存カテゴリーの色・Noindex 設定を上書きします。続けますか？"
+
+msgid "Please select a JSON file."
+msgstr "JSON ファイルを選択してください。"
+
+msgid "Failed to parse JSON."
+msgstr "JSON の解析に失敗しました。"
+
+msgid "Invalid file format (no categories)."
+msgstr "ファイル形式が不正です（categories がありません）。"
+
+msgid "created"
+msgstr "件作成"
+
+msgid "updated"
+msgstr "件更新"
+
+msgid "errors"
+msgstr "件エラー"
+
+msgid "An error occurred: "
+msgstr "エラーが発生しました："
+
+msgid "You do not have permission."
+msgstr "権限がありません。"
+
+msgid "The data is invalid."
+msgstr "データが無効です。"
+
+msgid "Required plugin files are missing: %s. Please reinstall the plugin."
+msgstr "必要なプラグインファイルが見つかりません：%s。プラグインを再インストールしてください。"

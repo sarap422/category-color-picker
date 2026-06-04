@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Category Color Picker
  * Description: Add a color picker to categories and reflect category colors in post listings and other selectors.
- * Version: 1.0.6
+ * Version: 1.2.0
  * Author: sarap422
  * Text Domain: category-color-picker
  * Requires at least: 5.0
@@ -19,6 +19,40 @@
 // セキュリティチェック
 if (!defined('ABSPATH')) {
   exit;
+}
+
+define('CCP_VERSION', '1.2.0');
+
+// Export/Import 機能の追加ファイル。欠落しても本体（カラーピッカー）は動かし、
+// 追加機能のみ無効化して管理画面に通知する（不完全なパッケージ対策）。
+$ccp_required_files = array(
+  'includes/class-ccp-io.php',
+  'includes/class-ccp-tools.php',
+);
+$ccp_missing_files = array();
+foreach ($ccp_required_files as $ccp_file) {
+  if (!file_exists(plugin_dir_path(__FILE__) . $ccp_file)) {
+    $ccp_missing_files[] = $ccp_file;
+  }
+}
+$ccp_tools_available = empty($ccp_missing_files);
+
+if ($ccp_tools_available) {
+  require_once plugin_dir_path(__FILE__) . 'includes/class-ccp-io.php';
+  require_once plugin_dir_path(__FILE__) . 'includes/class-ccp-tools.php';
+} else {
+  add_action('admin_notices', function () use ($ccp_missing_files) {
+    printf(
+      '<div class="notice notice-error"><p><strong>Category Color Picker:</strong> %s</p></div>',
+      esc_html(
+        sprintf(
+          /* translators: %s: comma-separated list of missing plugin files */
+          __('Required plugin files are missing: %s. Please reinstall the plugin.', 'category-color-picker'),
+          implode(', ', $ccp_missing_files)
+        )
+      )
+    );
+  });
 }
 
 class CategoryColorPicker {
@@ -49,6 +83,18 @@ class CategoryColorPicker {
     // カテゴリー一覧に色列を追加
     add_filter('manage_edit-category_columns', array($this, 'add_category_color_column'));
     add_filter('manage_category_custom_column', array($this, 'show_category_color_column'), 10, 3);
+
+    // ID列のソート
+    add_filter('manage_edit-category_sortable_columns', array($this, 'add_sortable_columns'));
+
+    // Noindex：カテゴリー編集画面にフィールド追加・保存
+    add_action('category_add_form_fields', array($this, 'add_category_noindex_field'));
+    add_action('category_edit_form_fields', array($this, 'edit_category_noindex_field'));
+    add_action('edited_category', array($this, 'save_category_noindex'));
+    add_action('create_category', array($this, 'save_category_noindex'));
+
+    // Noindex：フロントエンドで meta robots を出力
+    add_action('wp_head', array($this, 'output_noindex_meta'), 1);
 
     // 管理画面にメニューを追加
     add_action('admin_menu', array($this, 'add_admin_menu'));
@@ -138,7 +184,7 @@ class CategoryColorPicker {
     if ($hook === 'edit-tags.php' || $hook === 'term.php') {
       wp_enqueue_style('wp-color-picker');
       wp_enqueue_script('wp-color-picker');
-      wp_enqueue_script('category-color-picker', plugin_dir_url(__FILE__) . 'category-color-picker.js', array('wp-color-picker'), '1.0.0', true);
+      wp_enqueue_script('category-color-picker', plugin_dir_url(__FILE__) . 'category-color-picker.js', array('wp-color-picker'), CCP_VERSION, true);
     }
   }
 
@@ -151,7 +197,7 @@ class CategoryColorPicker {
       'category-color-picker-frontend',
       false, // URLをfalseにしてインラインスタイル専用に
       array(),
-      '1.0.6'
+      CCP_VERSION
     );
     wp_enqueue_style('category-color-picker-frontend');
     
@@ -186,7 +232,7 @@ class CategoryColorPicker {
     $default_tag_selectors = str_replace('{$slug}', '', $selectors_template);
     $css .= $default_tag_selectors . " {\n";
     $css .= "    background: hsla(0, 0%, 96%, 1);\n";
-    $css .= "    color: var(--c-gray, hsl(223, 6%, 50%));\n";
+    $css .= "    color: var(--c-gray, hsl(224, 6%, 50%));\n";
     $css .= "}\n\n";
 
     foreach ($categories as $category) {
@@ -335,22 +381,57 @@ class CategoryColorPicker {
   }
 
   /**
-   * カテゴリー一覧に色列を追加
+   * カテゴリー一覧のカラム構成を変更
+   * 順序: 名前 | スラッグ | 色 | 説明 | カウント | ID | Noindex
    */
   public function add_category_color_column($columns) {
-    // 説明列の後に色列を追加
+    // WordPress デフォルト列: name, description, slug, posts（カウント）
+    // 目標順: name, slug, color, description, posts, id, noindex
     $new_columns = array();
+
+    // 名前
+    if (isset($columns['name'])) {
+      $new_columns['name'] = $columns['name'];
+    }
+    // スラッグ
+    if (isset($columns['slug'])) {
+      $new_columns['slug'] = $columns['slug'];
+    }
+    // 色（新規追加）
+    $new_columns['color'] = esc_html__('Color', 'category-color-picker');
+    // 説明
+    if (isset($columns['description'])) {
+      $new_columns['description'] = $columns['description'];
+    }
+    // カウント
+    if (isset($columns['posts'])) {
+      $new_columns['posts'] = $columns['posts'];
+    }
+    // ID（新規追加）
+    $new_columns['category_id'] = esc_html__('ID', 'category-color-picker');
+    // Noindex（新規追加）
+    $new_columns['noindex'] = esc_html__('Noindex', 'category-color-picker');
+
+    // 上記で拾えなかった列（cbなど）は先頭に挿入
     foreach ($columns as $key => $value) {
-      $new_columns[$key] = $value;
-      if ($key === 'description') {
-        $new_columns['color'] = esc_html__('Color', 'category-color-picker');
+      if (!isset($new_columns[$key])) {
+        $new_columns = array($key => $value) + $new_columns;
       }
     }
+
     return $new_columns;
   }
 
   /**
-   * カテゴリー一覧の色列にカラー表示
+   * ID列をソート可能にする（Color・Noindex列はソート不要）
+   */
+  public function add_sortable_columns($sortable) {
+    $sortable['category_id'] = 'term_id';
+    return $sortable;
+  }
+
+  /**
+   * カテゴリー一覧の各カスタム列にデータを表示
    */
   public function show_category_color_column($content, $column_name, $term_id) {
     if ($column_name === 'color') {
@@ -367,8 +448,163 @@ class CategoryColorPicker {
         $content = '<span style="color: #999;">' . esc_html__('Not set', 'category-color-picker') . '</span>';
       }
     }
+
+    if ($column_name === 'category_id') {
+      $content = '<span style="color: #666;">' . intval($term_id) . '</span>';
+    }
+
+    if ($column_name === 'noindex') {
+      $noindex = get_term_meta($term_id, 'category_noindex', true);
+      if ($noindex) {
+        $content = '<span style="color: #d63638; font-weight: 600;">noindex</span>';
+      } else {
+        $content = '<span style="color: #999;">—</span>';
+      }
+    }
+
     return $content;
   }
+
+  // =========================================================
+  // Noindex 機能
+  // =========================================================
+
+  /**
+   * 新規カテゴリー追加画面に Noindex チェックボックスを追加
+   */
+  public function add_category_noindex_field() {
+  ?>
+    <div class="form-field">
+      <label for="category_noindex">
+        <input type="checkbox" name="category_noindex" id="category_noindex" value="1" />
+        <?php esc_html_e('Set noindex for this category', 'category-color-picker'); ?>
+      </label>
+      <p class="description">
+        <?php esc_html_e('If checked, noindex meta tag will be output on the category archive page and posts belonging to this category.', 'category-color-picker'); ?>
+      </p>
+    </div>
+  <?php
+  }
+
+  /**
+   * カテゴリー編集画面に Noindex チェックボックスを追加
+   */
+  public function edit_category_noindex_field($term) {
+    $noindex = get_term_meta($term->term_id, 'category_noindex', true);
+  ?>
+    <tr class="form-field">
+      <th scope="row" valign="top">
+        <label for="category_noindex"><?php esc_html_e('Noindex', 'category-color-picker'); ?></label>
+      </th>
+      <td>
+        <label>
+          <input type="checkbox" name="category_noindex" id="category_noindex" value="1" <?php checked($noindex, '1'); ?> />
+          <?php esc_html_e('Set noindex for this category', 'category-color-picker'); ?>
+        </label>
+        <p class="description">
+          <?php esc_html_e('If checked, noindex meta tag will be output on the category archive page and posts belonging to this category.', 'category-color-picker'); ?>
+        </p>
+      </td>
+    </tr>
+  <?php
+  }
+
+  /**
+   * Noindex フラグを保存
+   */
+  public function save_category_noindex($term_id) {
+    if (!current_user_can('manage_categories')) {
+      return;
+    }
+
+    // Nonce 検証
+    if (isset($_POST['tag-name'])) {
+      if (!isset($_POST['_wpnonce_add-tag']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce_add-tag'])), 'add-tag')) {
+        return;
+      }
+    } else {
+      if (!isset($_POST['_wpnonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce'])), 'update-tag_' . $term_id)) {
+        return;
+      }
+    }
+
+    if (isset($_POST['category_noindex']) && $_POST['category_noindex'] === '1') {
+      update_term_meta($term_id, 'category_noindex', '1');
+    } else {
+      delete_term_meta($term_id, 'category_noindex');
+    }
+  }
+
+  /**
+   * フロントエンドで noindex meta タグを出力
+   *
+   * 対象:
+   *   - カテゴリーアーカイブページ
+   *   - 投稿ページ（そのカテゴリーに属するもの）
+   *   - タグ・年月日アーカイブページ（指定カテゴリーの投稿を含む場合）
+   */
+  public function output_noindex_meta() {
+    // noindex 設定済みカテゴリーを取得
+    $noindex_ids = $this->get_noindex_category_ids();
+
+    if (empty($noindex_ids)) {
+      return;
+    }
+
+    $should_noindex = false;
+
+    // カテゴリーアーカイブページ
+    if (is_category($noindex_ids)) {
+      $should_noindex = true;
+    }
+    // 投稿ページ
+    elseif (is_single() && has_category($noindex_ids)) {
+      $should_noindex = true;
+    }
+    // タグ・年月日アーカイブ（指定カテゴリーの投稿を含む）
+    elseif (is_archive() && !is_category()) {
+      global $wp_query;
+      if (!empty($wp_query->posts)) {
+        foreach ($wp_query->posts as $post) {
+          if (has_category($noindex_ids, $post)) {
+            $should_noindex = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if ($should_noindex) {
+      echo '<meta name="robots" content="noindex" />' . "\n";
+    }
+  }
+
+  /**
+   * noindex フラグが設定されたカテゴリー ID の配列を返す
+   *
+   * @return int[]
+   */
+  private function get_noindex_category_ids() {
+    static $cache = null;
+    if ($cache !== null) {
+      return $cache;
+    }
+
+    $categories = get_categories(array('hide_empty' => false));
+    $ids = array();
+    foreach ($categories as $cat) {
+      if (get_term_meta($cat->term_id, 'category_noindex', true) === '1') {
+        $ids[] = (int) $cat->term_id;
+      }
+    }
+
+    $cache = $ids;
+    return $ids;
+  }
+
+  // =========================================================
+  // テキストカラー計算
+  // =========================================================
 
   /**
    * 背景色に基づいて適切なテキスト色を計算
@@ -386,9 +622,14 @@ class CategoryColorPicker {
     $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
 
     // 輝度が0.6より高い場合は暗いテキスト、そうでない場合は白テキスト
-    return $luminance > 0.6 ? 'var(--c-text, hsl(223, 6%, 13%))' : '#FFF';
+    return $luminance > 0.6 ? 'var(--c-text, hsl(224, 6%, 13%))' : '#FFF';
   }
 }
 
 // プラグインを初期化
 new CategoryColorPicker();
+
+// Export/Import 機能（ファイルが揃っている管理画面のみ）
+if ($ccp_tools_available && is_admin()) {
+  new Category_Color_Tools();
+}

@@ -1,0 +1,16 @@
+{
+  "name": "sarap422/category-color-picker-dev",
+  "description": "Dev tooling and unit tests for the Category Color Picker WordPress plugin (not shipped to wp.org).",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^10.5 || ^11.5",
+    "brain/monkey": "^2.6"
+  },
+  "scripts": {
+    "test": "phpunit"
+  }
+}
