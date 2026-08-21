@@ -63,9 +63,9 @@ class Category_Color_Tools {
     ));
   }
 
-  // ============================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺====================
   // エクスポート
-  // ============================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺====================
   public function ajax_export_categories() {
     check_ajax_referer(self::NONCE_ACTION, 'nonce');
     if (!current_user_can('manage_categories')) {
@@ -112,9 +112,9 @@ class Category_Color_Tools {
     ));
   }
 
-  // ============================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺====================
   // インポート
-  // ============================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺====================
   public function ajax_import_categories() {
     check_ajax_referer(self::NONCE_ACTION, 'nonce');
     if (!current_user_can('manage_categories')) {

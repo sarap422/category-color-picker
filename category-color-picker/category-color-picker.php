@@ -3,9 +3,10 @@
 /**
  * Plugin Name: Category Color Picker
  * Description: Add a color picker to categories and reflect category colors in post listings and other selectors.
- * Version: 1.2.0
+ * Version: 1.3.1
  * Author: sarap422
  * Text Domain: category-color-picker
+ * Domain Path: /languages
  * Requires at least: 5.0
  * Requires PHP: 7.4
  * License: GPLv2 or later
@@ -21,34 +22,34 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-define('CCP_VERSION', '1.2.0');
+define('CCP_VERSION', '1.3.1');
 
 // Export/Import 機能の追加ファイル。欠落しても本体（カラーピッカー）は動かし、
 // 追加機能のみ無効化して管理画面に通知する（不完全なパッケージ対策）。
-$ccp_required_files = array(
+$category_color_picker_required_files = array(
   'includes/class-ccp-io.php',
   'includes/class-ccp-tools.php',
 );
-$ccp_missing_files = array();
-foreach ($ccp_required_files as $ccp_file) {
-  if (!file_exists(plugin_dir_path(__FILE__) . $ccp_file)) {
-    $ccp_missing_files[] = $ccp_file;
+$category_color_picker_missing_files = array();
+foreach ($category_color_picker_required_files as $category_color_picker_file) {
+  if (!file_exists(plugin_dir_path(__FILE__) . $category_color_picker_file)) {
+    $category_color_picker_missing_files[] = $category_color_picker_file;
   }
 }
-$ccp_tools_available = empty($ccp_missing_files);
+$category_color_picker_tools_available = empty($category_color_picker_missing_files);
 
-if ($ccp_tools_available) {
+if ($category_color_picker_tools_available) {
   require_once plugin_dir_path(__FILE__) . 'includes/class-ccp-io.php';
   require_once plugin_dir_path(__FILE__) . 'includes/class-ccp-tools.php';
 } else {
-  add_action('admin_notices', function () use ($ccp_missing_files) {
+  add_action('admin_notices', function () use ($category_color_picker_missing_files) {
     printf(
       '<div class="notice notice-error"><p><strong>Category Color Picker:</strong> %s</p></div>',
       esc_html(
         sprintf(
           /* translators: %s: comma-separated list of missing plugin files */
           __('Required plugin files are missing: %s. Please reinstall the plugin.', 'category-color-picker'),
-          implode(', ', $ccp_missing_files)
+          implode(', ', $category_color_picker_missing_files)
         )
       )
     );
@@ -65,12 +66,8 @@ class CategoryColorPicker
 
   public function init()
   {
-    // initフックで翻訳を読み込み
-    load_plugin_textdomain(
-      'category-color-picker',
-      false,
-      dirname(plugin_basename(__FILE__)) . '/languages/'
-    );
+    // 翻訳ファイルは WordPress が自動で読み込むため、手動での読み込み処理は不要
+    // （WordPress 4.6 以降。WordPress.org でホストしているプラグインが対象）
 
     // カテゴリー編集画面にカラーピッカーを追加
     add_action('category_add_form_fields', array($this, 'add_category_color_field'));
@@ -90,6 +87,9 @@ class CategoryColorPicker
     // ID列のソート
     add_filter('manage_edit-category_sortable_columns', array($this, 'add_sortable_columns'));
 
+    // クイック編集にカラーピッカー・Noindex を追加
+    add_action('quick_edit_custom_box', array($this, 'quick_edit_fields'), 10, 3);
+
     // Noindex：カテゴリー編集画面にフィールド追加・保存
     add_action('category_add_form_fields', array($this, 'add_category_noindex_field'));
     add_action('category_edit_form_fields', array($this, 'edit_category_noindex_field'));
@@ -105,6 +105,7 @@ class CategoryColorPicker
 
     // フロントエンドでCSSをエンキュー（修正版）
     add_action('wp_enqueue_scripts', array($this, 'enqueue_category_colors_css'));
+    add_action('wp_enqueue_scripts', array($this, 'enqueue_category_colors_js'));
   }
 
   /**
@@ -159,8 +160,13 @@ class CategoryColorPicker
       return;
     }
 
-    // Nonce検証（新規作成時と編集時で異なる）
-    if (isset($_POST['tag-name'])) {
+    // Nonce検証（新規作成時・編集時・クイック編集時で異なる）
+    if (isset($_POST['ccp_quick_edit_nonce'])) {
+      // クイック編集（AJAX: inline-save-tax）
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ccp_quick_edit_nonce'])), 'ccp_quick_edit')) {
+        return;
+      }
+    } elseif (isset($_POST['tag-name'])) {
       // 新規カテゴリー作成時
       if (!isset($_POST['_wpnonce_add-tag']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce_add-tag'])), 'add-tag')) {
         return;
@@ -172,8 +178,16 @@ class CategoryColorPicker
       }
     }
 
-    if (isset($_POST['category_color']) && !empty($_POST['category_color'])) {
-      $color = sanitize_hex_color(sanitize_text_field(wp_unslash($_POST['category_color'])));
+    if (isset($_POST['category_color'])) {
+      $raw = sanitize_text_field(wp_unslash($_POST['category_color']));
+
+      if ($raw === '') {
+        // 空で送信された場合は色を解除（クイック編集でのクリアに対応）
+        delete_term_meta($term_id, 'category_color');
+        return;
+      }
+
+      $color = sanitize_hex_color($raw);
       if ($color) {
         update_term_meta($term_id, 'category_color', $color);
       } else {
@@ -194,7 +208,7 @@ class CategoryColorPicker
       wp_enqueue_script(
         'category-color-picker',
         plugin_dir_url(__FILE__) . '/js/category-color-picker.js',
-        array('jquery', 'jquery-ui-sortable'),
+        array('jquery', 'jquery-ui-sortable', 'wp-color-picker', 'inline-edit-tax'),
         CCP_VERSION,
         true
       );
@@ -206,6 +220,49 @@ class CategoryColorPicker
         CCP_VERSION
       );
     }
+  }
+
+  /**
+   * クイック編集にカラーピッカーと Noindex のフィールドを追加
+   *
+   * タクソノミー一覧のクイック編集は列ごとに呼ばれるため、
+   * 'color' 列のタイミングでまとめて出力する。
+   * 現在値の流し込みは JS 側（category-color-picker.js）で行う。
+   *
+   * @param string $column_name カラム名
+   * @param string $screen      画面種別（'edit-tags'）
+   * @param string $taxonomy    タクソノミー名
+   */
+  public function quick_edit_fields($column_name, $screen = '', $taxonomy = '')
+  {
+    if ($column_name !== 'color' || $taxonomy !== 'category') {
+      return;
+    }
+
+    wp_nonce_field('ccp_quick_edit', 'ccp_quick_edit_nonce');
+  ?>
+    <fieldset>
+      <div class="inline-edit-col">
+        <label>
+          <span class="title"><?php esc_html_e('Color', 'category-color-picker'); ?></span>
+          <span class="input-text-wrap">
+            <input type="text"
+              name="category_color"
+              class="ccp-quick-edit-color"
+              value=""
+              data-default-color="#002A7B" />
+          </span>
+        </label>
+        <label style="margin-top: 6px; display: block;">
+          <span class="title">&nbsp;</span>
+          <span class="input-text-wrap">
+            <input type="checkbox" name="category_noindex" class="ccp-quick-edit-noindex" value="1" />
+            <?php esc_html_e('Set noindex for this category', 'category-color-picker'); ?>
+          </span>
+        </label>
+      </div>
+    </fieldset>
+  <?php
   }
 
   /**
@@ -250,6 +307,9 @@ class CategoryColorPicker
 
     $css = "/* Category Colors CSS */\n";
 
+    // :root にカテゴリーカラーを CSS カスタムプロパティとして出力
+    $css .= $this->generate_category_colors_vars($categories);
+
     // デフォルトのカテゴリー色
     $default_tag_selectors = str_replace('{$slug}', '', $selectors_template);
     $css .= $default_tag_selectors . " {\n";
@@ -274,6 +334,169 @@ class CategoryColorPicker
     }
 
     return $css;
+  }
+
+  /**
+   * :root のカテゴリーカラー CSS カスタムプロパティを生成
+   *
+   * 出力例:
+   *   :root {
+   *     --ccp-color-html-css: #e44d26;
+   *     --ccp-contrast-html-css: #FFF;
+   *   }
+   *
+   * @param array $categories get_categories() の結果
+   * @return string
+   */
+  private function generate_category_colors_vars($categories)
+  {
+    $lines = array();
+
+    foreach ($categories as $category) {
+      $color = get_term_meta($category->term_id, 'category_color', true);
+      if (!$color) {
+        continue;
+      }
+
+      // CSS カスタムプロパティ名に使える文字だけ通す（日本語スラッグ等を除外）
+      $css_key = $this->slug_to_css_key($category->slug);
+      if ($css_key === '') {
+        continue;
+      }
+
+      $lines[] = sprintf('  --ccp-color-%s: %s;', $css_key, $color);
+      $lines[] = sprintf('  --ccp-contrast-%s: %s;', $css_key, $this->get_text_color_hex($color));
+    }
+
+    if (empty($lines)) {
+      return '';
+    }
+
+    return ":root {\n" . implode("\n", $lines) . "\n}\n\n";
+  }
+
+  /**
+   * フロントエンドにカテゴリーカラーの JavaScript 変数を出力
+   *
+   * 出力例:
+   *   window.CCPColors = {"html-css":{"color":"#e44d26","contrast":"#FFFFFF"}, ...};
+   *   window.__ccp_color_html_css    = "#e44d26";
+   *   window.__ccp_contrast_html_css = "#FFFFFF";
+   *
+   * スラッグのハイフンはアンダースコアに変換される（chart1-light → chart1_light）。
+   * wp_head() 内で出力するため、body 内のインラインスクリプトから参照できる。
+   */
+  public function enqueue_category_colors_js()
+  {
+    $categories = get_categories(array('hide_empty' => false));
+    if (empty($categories)) {
+      return;
+    }
+
+    $map     = array();
+    $globals = array();
+
+    foreach ($categories as $category) {
+      $color = get_term_meta($category->term_id, 'category_color', true);
+      if (!$color) {
+        continue;
+      }
+
+      $contrast = $this->get_text_color_hex($color);
+
+      // オブジェクト形式は元のスラッグをそのまま使う（日本語スラッグも保持）
+      $map[$category->slug] = array(
+        'color'    => $color,
+        'contrast' => $contrast,
+      );
+
+      // グローバル変数は JS 識別子として有効なスラッグのみ
+      $js_key = $this->slug_to_js_key($category->slug);
+      if ($js_key === '') {
+        continue;
+      }
+
+      $globals[] = sprintf(
+        'window.__ccp_color_%1$s = %2$s; window.__ccp_contrast_%1$s = %3$s;',
+        $js_key,
+        wp_json_encode($color),
+        wp_json_encode($contrast)
+      );
+    }
+
+    if (empty($map)) {
+      return;
+    }
+
+    $js  = '/* Category Colors JS */' . "\n";
+    $js .= 'window.CCPColors = ' . wp_json_encode($map) . ";\n";
+    if (!empty($globals)) {
+      $js .= implode("\n", $globals) . "\n";
+    }
+
+    // src を false にしてインラインスクリプト専用（$in_footer = false で wp_head に出力）
+    wp_register_script('category-color-picker-vars', false, array(), CCP_VERSION, false);
+    wp_enqueue_script('category-color-picker-vars');
+    wp_add_inline_script('category-color-picker-vars', $js);
+  }
+
+  /**
+   * スラッグを CSS カスタムプロパティ名に使える形に変換
+   * 英数字・ハイフン・アンダースコア以外を除去する。
+   *
+   * @param string $slug
+   * @return string 変換後のキー（使用不可な場合は空文字）
+   */
+  private function slug_to_css_key($slug)
+  {
+    $key = preg_replace('/[^A-Za-z0-9_-]/', '', $slug);
+    return ($key === '-' || $key === '_') ? '' : (string) $key;
+  }
+
+  /**
+   * スラッグを JavaScript 識別子に使える形に変換
+   * ハイフンをアンダースコアに変換し、識別子として無効なものは空文字を返す。
+   *
+   * 例: chart1-light → chart1_light
+   *
+   * @param string $slug
+   * @return string 変換後のキー（使用不可な場合は空文字）
+   */
+  private function slug_to_js_key($slug)
+  {
+    $key = str_replace('-', '_', $slug);
+    // 英数字・アンダースコア以外を除去（日本語スラッグ等）
+    $key = preg_replace('/[^A-Za-z0-9_]/', '', $key);
+
+    // 空、または先頭が数字の場合は識別子として無効
+    if ($key === '' || preg_match('/^[0-9]/', $key)) {
+      return '';
+    }
+
+    return $key;
+  }
+
+  /**
+   * 背景色に対するコントラスト色を「実際の色値」で返す
+   *
+   * get_text_color() は CSS 変数（var(--c-text, ...)）を返すため、
+   * Canvas / Chart.js など CSS 変数を解決できない用途ではこちらを使う。
+   *
+   * @param string $hex_color
+   * @return string #FFFFFF または #1F2023
+   */
+  private function get_text_color_hex($hex_color)
+  {
+    $hex_color = ltrim($hex_color, '#');
+
+    $r = hexdec(substr($hex_color, 0, 2));
+    $g = hexdec(substr($hex_color, 2, 2));
+    $b = hexdec(substr($hex_color, 4, 2));
+
+    $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    $threshold = (float) get_option('category_color_luminance_threshold', 0.6);
+
+    return $luminance > $threshold ? '#1F2023' : '#FFFFFF';
   }
 
   /**
@@ -302,6 +525,15 @@ class CategoryColorPicker
         'sanitize_callback' => array($this, 'sanitize_category_color_selectors')
       )
     );
+
+    register_setting(
+      'category_color_settings',
+      'category_color_luminance_threshold',
+      array(
+        'sanitize_callback' => array($this, 'sanitize_luminance_threshold'),
+        'default'           => 0.6,
+      )
+    );
   }
 
   /**
@@ -310,6 +542,26 @@ class CategoryColorPicker
   public function sanitize_category_color_selectors($input)
   {
     return sanitize_textarea_field($input);
+  }
+
+  /**
+   * 輝度閾値のサニタイゼーション（0.00〜1.00 の範囲にクランプ）
+   */
+  public function sanitize_luminance_threshold($input)
+  {
+    if ($input === '' || $input === null) {
+      return 0.6;
+    }
+
+    $value = (float) $input;
+
+    if ($value < 0) {
+      $value = 0;
+    } elseif ($value > 1) {
+      $value = 1;
+    }
+
+    return $value;
   }
 
   /**
@@ -328,7 +580,8 @@ class CategoryColorPicker
 .veu_postList ul.postList .postList_terms a[href*="category/{$slug}"],
 .pt-cv-wrapper .pt-cv-view [class*="pt-cv-tax"][href*="category/{$slug}"]';
 
-    $selectors = get_option('category_color_selectors', $default_selectors);
+    $selectors           = get_option('category_color_selectors', $default_selectors);
+    $luminance_threshold = get_option('category_color_luminance_threshold', 0.6);
   ?>
     <div class="wrap">
       <h1><?php esc_html_e('Category Color Settings', 'category-color-picker'); ?></h1>
@@ -351,7 +604,22 @@ class CategoryColorPicker
               </p>
             </td>
           </tr>
+          <tr>
+            <th scope="row">
+              <label for="category_color_luminance_threshold"><?php esc_html_e('Text Color Luminance Threshold', 'category-color-picker'); ?></label>
+            </th>
+            <td>
+              <input type="number" name="category_color_luminance_threshold" id="category_color_luminance_threshold" value="<?php echo esc_attr($luminance_threshold); ?>" min="0" max="1" step="0.01" class="small-text">
+              <p class="description">
+                <?php esc_html_e('Background colors with a luminance above this value use dark text; below it, white text is used. Range: 0.00–1.00 (default: 0.60).', 'category-color-picker'); ?>
+              </p>
+            </td>
+          </tr>
         </table>
+
+        <!-- 変更を保存 -->
+        <?php submit_button(); ?>
+
 
         <h2><?php esc_html_e('Usage Example', 'category-color-picker'); ?></h2>
         <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #0073aa; margin: 20px 0;">
@@ -373,14 +641,174 @@ class CategoryColorPicker
           <code>a[href*="category/{$slug}"]</code><br>
           <code>.category-{$slug} a</code>
         </div>
-
-        <?php submit_button(); ?>
       </form>
+
+      <h2><?php esc_html_e('CSS Variables and JavaScript Variables', 'category-color-picker'); ?></h2>
+      <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #0073aa; margin: 20px 0;">
+        <p>
+          <?php esc_html_e('In addition to the selectors above, category colors are also output as CSS custom properties and JavaScript variables. You can use them anywhere in your theme.', 'category-color-picker'); ?>
+        </p>
+
+        <h3><?php esc_html_e('CSS custom properties', 'category-color-picker'); ?></h3>
+        <p class="description">
+          <?php esc_html_e('Output to :root, so they are available from any stylesheet.', 'category-color-picker'); ?>
+        </p>
+        <pre style="background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;"><code><?php echo esc_html($this->generate_sample_vars_css()); ?></code></pre>
+        <p class="description">
+          <?php esc_html_e('Usage example:', 'category-color-picker'); ?>
+        </p>
+        <pre style="background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;"><code>.tool-section {
+    border: 5px solid var(--ccp-color-<?php echo esc_html($this->get_sample_slug()); ?>);
+    color: var(--ccp-contrast-<?php echo esc_html($this->get_sample_slug()); ?>);
+}</code></pre>
+
+        <h3><?php esc_html_e('JavaScript variables', 'category-color-picker'); ?></h3>
+        <p class="description">
+          <?php esc_html_e('Output inside wp_head(), so they can be referenced from inline scripts in the page body. Useful for Chart.js and Canvas, where CSS variables cannot be resolved.', 'category-color-picker'); ?><br>
+          <?php esc_html_e('Hyphens in the slug are converted to underscores (chart1-light becomes chart1_light).', 'category-color-picker'); ?>
+        </p>
+        <pre style="background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;"><code><?php echo esc_html($this->generate_sample_vars_js()); ?></code></pre>
+        <p class="description">
+          <?php esc_html_e('Usage example:', 'category-color-picker'); ?>
+        </p>
+        <pre style="background: #fff; padding: 10px; border: 1px solid #ddd; overflow-x: auto;"><code>new Chart(ctx, {
+    data: { datasets: [{ backgroundColor: __ccp_color_<?php echo esc_html($this->get_sample_js_key()); ?> }] }
+});</code></pre>
+        <p class="description">
+          <?php esc_html_e('Slugs that are not valid JavaScript identifiers (for example, non-ASCII slugs or slugs starting with a number) are available only through the CCPColors object.', 'category-color-picker'); ?>
+        </p>
+      </div>
 
       <h2><?php esc_html_e('Category List', 'category-color-picker'); ?></h2>
       <p><a href="<?php echo esc_url(admin_url('edit-tags.php?taxonomy=category')); ?>" class="button"><?php esc_html_e('Go to Category Management', 'category-color-picker'); ?></a></p>
     </div>
   <?php
+  }
+
+  /**
+   * 設定ページ用：サンプル表示に使うカテゴリースラッグを取得
+   * 色が設定済みのカテゴリーがあればそれを、なければダミーを返す。
+   *
+   * @return string
+   */
+  private function get_sample_slug()
+  {
+    foreach ($this->get_colored_categories() as $category) {
+      $css_key = $this->slug_to_css_key($category->slug);
+      if ($css_key !== '') {
+        return $css_key;
+      }
+    }
+    return 'sample-category';
+  }
+
+  /**
+   * 設定ページ用：サンプル表示に使う JS キーを取得
+   *
+   * @return string
+   */
+  private function get_sample_js_key()
+  {
+    foreach ($this->get_colored_categories() as $category) {
+      $js_key = $this->slug_to_js_key($category->slug);
+      if ($js_key !== '') {
+        return $js_key;
+      }
+    }
+    return 'sample_category';
+  }
+
+  /**
+   * 色が設定されているカテゴリーの一覧を取得
+   *
+   * @return array
+   */
+  private function get_colored_categories()
+  {
+    $categories = get_categories(array('hide_empty' => false));
+    $colored    = array();
+
+    foreach ($categories as $category) {
+      if (get_term_meta($category->term_id, 'category_color', true)) {
+        $colored[] = $category;
+      }
+    }
+
+    return $colored;
+  }
+
+  /**
+   * 設定ページ用：CSS カスタムプロパティのサンプル出力を生成（先頭3件）
+   *
+   * @return string
+   */
+  private function generate_sample_vars_css()
+  {
+    $colored = $this->get_colored_categories();
+
+    if (empty($colored)) {
+      return ":root {\n  --ccp-color-sample-category: #002A7B;\n  --ccp-contrast-sample-category: #FFFFFF;\n}";
+    }
+
+    $lines = array();
+    $count = 0;
+
+    foreach ($colored as $category) {
+      $css_key = $this->slug_to_css_key($category->slug);
+      if ($css_key === '') {
+        continue;
+      }
+
+      $color     = get_term_meta($category->term_id, 'category_color', true);
+      $lines[]   = sprintf('  --ccp-color-%s: %s;', $css_key, $color);
+      $lines[]   = sprintf('  --ccp-contrast-%s: %s;', $css_key, $this->get_text_color_hex($color));
+      $count++;
+
+      if ($count >= 3) {
+        $lines[] = '  ...';
+        break;
+      }
+    }
+
+    return ":root {\n" . implode("\n", $lines) . "\n}";
+  }
+
+  /**
+   * 設定ページ用：JavaScript 変数のサンプル出力を生成（先頭3件）
+   *
+   * @return string
+   */
+  private function generate_sample_vars_js()
+  {
+    $colored = $this->get_colored_categories();
+
+    if (empty($colored)) {
+      return 'window.CCPColors = {"sample-category":{"color":"#002A7B","contrast":"#FFFFFF"}};' . "\n"
+        . 'window.__ccp_color_sample_category = "#002A7B";' . "\n"
+        . 'window.__ccp_contrast_sample_category = "#FFFFFF";';
+    }
+
+    $lines   = array('window.CCPColors = { ... };');
+    $count   = 0;
+
+    foreach ($colored as $category) {
+      $js_key = $this->slug_to_js_key($category->slug);
+      if ($js_key === '') {
+        continue;
+      }
+
+      $color   = get_term_meta($category->term_id, 'category_color', true);
+      $lines[] = sprintf('window.__ccp_color_%s = "%s";', $js_key, $color);
+      $lines[] = sprintf('window.__ccp_contrast_%s = "%s";', $js_key, $this->get_text_color_hex($color));
+      $count++;
+
+      if ($count >= 3) {
+        $lines[] = '...';
+        break;
+      }
+    }
+
+    return implode("\n", $lines);
   }
 
   /**
@@ -466,16 +894,23 @@ class CategoryColorPicker
   {
     if ($column_name === 'color') {
       $color = get_term_meta($term_id, 'category_color', true);
+
+      // クイック編集の JS が現在値を読み取るための隠しデータ
+      $hidden = sprintf(
+        '<span class="ccp-inline-color" data-color="%s" style="display:none;"></span>',
+        esc_attr($color ? $color : '')
+      );
+
       if ($color) {
         $text_color = $this->get_text_color($color);
-        $content = sprintf(
+        $content = $hidden . sprintf(
           '<div class="category-color-display" style="background-color: %s; color: %s; padding: 4px 8px; border-radius: 3px; display: inline-block; min-width: 60px; text-align: center; font-size: 11px;">%s</div>',
           esc_attr($color),
           esc_attr($text_color),
           esc_html($color)
         );
       } else {
-        $content = '<span style="color: #999;">' . esc_html__('Not set', 'category-color-picker') . '</span>';
+        $content = $hidden . '<span style="color: #999;">' . esc_html__('Not set', 'category-color-picker') . '</span>';
       }
     }
 
@@ -485,19 +920,26 @@ class CategoryColorPicker
 
     if ($column_name === 'noindex') {
       $noindex = get_term_meta($term_id, 'category_noindex', true);
+
+      // クイック編集の JS が現在値を読み取るための隠しデータ
+      $hidden = sprintf(
+        '<span class="ccp-inline-noindex" data-noindex="%s" style="display:none;"></span>',
+        $noindex ? '1' : '0'
+      );
+
       if ($noindex) {
-        $content = '<span style="color: #d63638; font-weight: 600;">noindex</span>';
+        $content = $hidden . '<span style="color: #d63638; font-weight: 600;">noindex</span>';
       } else {
-        $content = '<span style="color: #999;">—</span>';
+        $content = $hidden . '<span style="color: #999;">—</span>';
       }
     }
 
     return $content;
   }
 
-  // =========================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺=================
   // Noindex 機能
-  // =========================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺=================
 
   /**
    * 新規カテゴリー追加画面に Noindex チェックボックスを追加
@@ -550,8 +992,13 @@ class CategoryColorPicker
       return;
     }
 
-    // Nonce 検証
-    if (isset($_POST['tag-name'])) {
+    // Nonce 検証（新規作成時・編集時・クイック編集時で異なる）
+    if (isset($_POST['ccp_quick_edit_nonce'])) {
+      // クイック編集（AJAX: inline-save-tax）
+      if (!wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['ccp_quick_edit_nonce'])), 'ccp_quick_edit')) {
+        return;
+      }
+    } elseif (isset($_POST['tag-name'])) {
       if (!isset($_POST['_wpnonce_add-tag']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['_wpnonce_add-tag'])), 'add-tag')) {
         return;
       }
@@ -637,9 +1084,9 @@ class CategoryColorPicker
     return $ids;
   }
 
-  // =========================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺=================
   // テキストカラー計算
-  // =========================================================
+  // ༻༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶❀༶⊰⟡⊱༶⊰⟡⊱༶⊰⟡⊱༶༺=================
 
   /**
    * 背景色に基づいて適切なテキスト色を計算
@@ -656,9 +1103,10 @@ class CategoryColorPicker
 
     // 相対輝度を計算
     $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
+    $threshold = (float) get_option('category_color_luminance_threshold', 0.6);
 
-    // 輝度が0.6より高い場合は暗いテキスト、そうでない場合は白テキスト
-    return $luminance > 0.6 ? 'var(--c-text, hsl(224, 6%, 13%))' : '#FFF';
+    // 輝度が閾値より高い場合は暗いテキスト、そうでない場合は白テキスト
+    return $luminance > $threshold ? 'var(--c-base-900, hsl(224, 6%, 13%))' : '#FFF';
   }
 }
 
@@ -666,6 +1114,6 @@ class CategoryColorPicker
 new CategoryColorPicker();
 
 // Export/Import 機能（ファイルが揃っている管理画面のみ）
-if ($ccp_tools_available && is_admin()) {
+if ($category_color_picker_tools_available && is_admin()) {
   new Category_Color_Tools();
 }

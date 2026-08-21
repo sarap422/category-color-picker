@@ -3,10 +3,10 @@
 # This file is distributed under the GPL v2 or later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Category Color Picker 1.0.0\n"
+"Project-Id-Version: Category Color Picker 1.3.1\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2025-01-01 12:00+0000\n"
-"PO-Revision-Date: 2025-01-01 12:00+0000\n"
+"PO-Revision-Date: 2026-08-21 12:00+0000\n"
 "Last-Translator: sarap422\n"
 "Language-Team: Japanese\n"
 "Language: ja\n"
@@ -118,3 +118,11 @@ msgstr "データが無効です。"
 
 msgid "Required plugin files are missing: %s. Please reinstall the plugin."
 msgstr "必要なプラグインファイルが見つかりません：%s。プラグインを再インストールしてください。"
+
+# --- 1.3.1: Text Color Luminance Threshold ---
+
+msgid "Text Color Luminance Threshold"
+msgstr "テキストカラーの輝度閾値"
+
+msgid "Background colors with a luminance above this value use dark text; below it, white text is used. Range: 0.00–1.00 (default: 0.60)."
+msgstr "この値より輝度が高い背景色には暗いテキスト、低い背景色には白いテキストが使われます。範囲：0.00〜1.00（初期値：0.60）。"
