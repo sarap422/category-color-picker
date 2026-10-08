@@ -4,7 +4,7 @@ Tags: category, color, picker, noindex, css
 Requires at least: 5.0
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.1
+Stable tag: 1.3.2
 License: GPL v2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -22,7 +22,7 @@ Category Color Picker lets you assign a color to each WordPress category and aut
 * Customizable CSS selectors
 * Adds "Color", "ID" and "Noindex" columns to the category list
 * Sortable by the ID column
-* Per-category noindex setting (applies to the category archive, single posts in that category, and tag/date archives that contain those posts)
+* Per-category noindex setting (applies to the category archive, single posts and pages in that category, and tag/date archives that contain those posts)
 * JSON export / import of categories (including color and noindex settings)
 * Category colors output as CSS custom properties (--ccp-color-{slug} / --ccp-contrast-{slug})
 * Category colors output as JavaScript variables (window.__ccp_color_{slug} and the CCPColors object)
@@ -65,7 +65,9 @@ Yes. You can freely set CSS selectors under Settings > Category Color.
 
 = Which pages does noindex apply to? =
 
-It outputs `<meta name="robots" content="noindex" />` on the category archive page, single posts belonging to that category, and tag/date archive pages that contain posts in the target category.
+It adds `noindex` to the robots meta tag on the category archive page, single posts and pages belonging to that category (including pages, when your theme enables categories for pages), and tag/date archive pages that contain posts in the target category.
+
+On WordPress 5.7 and later, `noindex` is added through the `wp_robots` filter, so it is combined with the robots meta tag that WordPress outputs (for example, `<meta name='robots' content='max-image-preview:large, noindex' />`). On older versions, `<meta name="robots" content="noindex" />` is output separately.
 
 = Where can I check the noindex setting? =
 
@@ -88,11 +90,7 @@ Colors are also output as `window.__ccp_color_{slug}` and `window.__ccp_contrast
 
 == Changelog ==
 
-= 1.3.1 =
-* Added a setting to customize the text color luminance threshold (Settings > Category Color)
-* Added Japanese translations for the new setting strings
-
-= 1.3.0 =
+= 1.3.2 =
 * Added CSS custom property output to :root (--ccp-color-{slug} / --ccp-contrast-{slug})
 * Added JavaScript variable output (window.__ccp_color_{slug}, window.__ccp_contrast_{slug}, and the CCPColors object)
 * Hyphens in slugs are converted to underscores for JavaScript variable names
@@ -101,6 +99,8 @@ Colors are also output as `window.__ccp_color_{slug}` and `window.__ccp_contrast
 * Reduced the number of tags to five (Plugin Check compliance)
 * Removed the manual translation loading call, which is unnecessary since WordPress 4.6 (Plugin Check compliance)
 * Added the Domain Path header
+* Fixed: noindex was not output on pages assigned to a noindex category (the check now uses is_singular() instead of is_single())
+* noindex is now added through the wp_robots filter on WordPress 5.7 and later, so only one robots meta tag is output
 
 = 1.2.0 =
 * Added JSON export / import for categories (buttons placed at the top right of the category list screen)

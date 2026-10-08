@@ -3,7 +3,7 @@
 /**
  * Plugin Name: Category Color Picker
  * Description: Add a color picker to categories and reflect category colors in post listings and other selectors.
- * Version: 1.3.1
+ * Version: 1.3.2
  * Author: sarap422
  * Text Domain: category-color-picker
  * Domain Path: /languages
@@ -22,7 +22,7 @@ if (!defined('ABSPATH')) {
   exit;
 }
 
-define('CCP_VERSION', '1.3.1');
+define('CCP_VERSION', '1.3.2');
 
 // Export/Import 機能の追加ファイル。欠落しても本体（カラーピッカー）は動かし、
 // 追加機能のみ無効化して管理画面に通知する（不完全なパッケージ対策）。
@@ -97,7 +97,13 @@ class CategoryColorPicker
     add_action('create_category', array($this, 'save_category_noindex'));
 
     // Noindex：フロントエンドで meta robots を出力
-    add_action('wp_head', array($this, 'output_noindex_meta'), 1);
+    // WordPress 5.7 以降は wp_robots フィルターで、本体が出力する robots meta に noindex をまとめる
+    // （5.7 未満は wp_robots() が無いため、wp_head に meta タグを単独で出力する）
+    if (function_exists('wp_robots')) {
+      add_filter('wp_robots', array($this, 'filter_wp_robots'));
+    } else {
+      add_action('wp_head', array($this, 'output_noindex_meta'), 1);
+    }
 
     // 管理画面にメニューを追加
     add_action('admin_menu', array($this, 'add_admin_menu'));
@@ -314,7 +320,7 @@ class CategoryColorPicker
     $default_tag_selectors = str_replace('{$slug}', '', $selectors_template);
     $css .= $default_tag_selectors . " {\n";
     $css .= "    background: hsla(0, 0%, 96%, 1);\n";
-    $css .= "    color: var(--c-gray, hsl(224, 6%, 50%));\n";
+    $css .= "    color: var(--c-gray-600, hsl(224, 6%, 43%));\n";
     $css .= "}\n\n";
 
     foreach ($categories as $category) {
@@ -479,7 +485,7 @@ class CategoryColorPicker
   /**
    * 背景色に対するコントラスト色を「実際の色値」で返す
    *
-   * get_text_color() は CSS 変数（var(--c-text, ...)）を返すため、
+   * get_text_color() は CSS 変数（var(--c-base-900, ...)）を返すため、
    * Canvas / Chart.js など CSS 変数を解決できない用途ではこちらを使う。
    *
    * @param string $hex_color
@@ -494,9 +500,8 @@ class CategoryColorPicker
     $b = hexdec(substr($hex_color, 4, 2));
 
     $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
-    $threshold = (float) get_option('category_color_luminance_threshold', 0.6);
 
-    return $luminance > $threshold ? '#1F2023' : '#FFFFFF';
+    return $luminance > 0.6 ? '#1F2023' : '#FFFFFF';
   }
 
   /**
@@ -525,15 +530,6 @@ class CategoryColorPicker
         'sanitize_callback' => array($this, 'sanitize_category_color_selectors')
       )
     );
-
-    register_setting(
-      'category_color_settings',
-      'category_color_luminance_threshold',
-      array(
-        'sanitize_callback' => array($this, 'sanitize_luminance_threshold'),
-        'default'           => 0.6,
-      )
-    );
   }
 
   /**
@@ -542,26 +538,6 @@ class CategoryColorPicker
   public function sanitize_category_color_selectors($input)
   {
     return sanitize_textarea_field($input);
-  }
-
-  /**
-   * 輝度閾値のサニタイゼーション（0.00〜1.00 の範囲にクランプ）
-   */
-  public function sanitize_luminance_threshold($input)
-  {
-    if ($input === '' || $input === null) {
-      return 0.6;
-    }
-
-    $value = (float) $input;
-
-    if ($value < 0) {
-      $value = 0;
-    } elseif ($value > 1) {
-      $value = 1;
-    }
-
-    return $value;
   }
 
   /**
@@ -580,8 +556,7 @@ class CategoryColorPicker
 .veu_postList ul.postList .postList_terms a[href*="category/{$slug}"],
 .pt-cv-wrapper .pt-cv-view [class*="pt-cv-tax"][href*="category/{$slug}"]';
 
-    $selectors           = get_option('category_color_selectors', $default_selectors);
-    $luminance_threshold = get_option('category_color_luminance_threshold', 0.6);
+    $selectors = get_option('category_color_selectors', $default_selectors);
   ?>
     <div class="wrap">
       <h1><?php esc_html_e('Category Color Settings', 'category-color-picker'); ?></h1>
@@ -604,22 +579,7 @@ class CategoryColorPicker
               </p>
             </td>
           </tr>
-          <tr>
-            <th scope="row">
-              <label for="category_color_luminance_threshold"><?php esc_html_e('Text Color Luminance Threshold', 'category-color-picker'); ?></label>
-            </th>
-            <td>
-              <input type="number" name="category_color_luminance_threshold" id="category_color_luminance_threshold" value="<?php echo esc_attr($luminance_threshold); ?>" min="0" max="1" step="0.01" class="small-text">
-              <p class="description">
-                <?php esc_html_e('Background colors with a luminance above this value use dark text; below it, white text is used. Range: 0.00–1.00 (default: 0.60).', 'category-color-picker'); ?>
-              </p>
-            </td>
-          </tr>
         </table>
-
-        <!-- 変更を保存 -->
-        <?php submit_button(); ?>
-
 
         <h2><?php esc_html_e('Usage Example', 'category-color-picker'); ?></h2>
         <div style="background: #f9f9f9; padding: 15px; border-left: 4px solid #0073aa; margin: 20px 0;">
@@ -641,6 +601,8 @@ class CategoryColorPicker
           <code>a[href*="category/{$slug}"]</code><br>
           <code>.category-{$slug} a</code>
         </div>
+
+        <?php submit_button(); ?>
       </form>
 
       <h2><?php esc_html_e('CSS Variables and JavaScript Variables', 'category-color-picker'); ?></h2>
@@ -1016,46 +978,69 @@ class CategoryColorPicker
   }
 
   /**
-   * フロントエンドで noindex meta タグを出力
+   * 現在のページに noindex を付けるかどうかを判定
    *
    * 対象:
    *   - カテゴリーアーカイブページ
-   *   - 投稿ページ（そのカテゴリーに属するもの）
+   *   - 個別ページ（投稿・固定ページ・カスタム投稿のうち、そのカテゴリーに属するもの）
    *   - タグ・年月日アーカイブページ（指定カテゴリーの投稿を含む場合）
+   *
+   * @return bool
    */
-  public function output_noindex_meta()
+  private function should_noindex()
   {
     // noindex 設定済みカテゴリーを取得
     $noindex_ids = $this->get_noindex_category_ids();
 
     if (empty($noindex_ids)) {
-      return;
+      return false;
     }
-
-    $should_noindex = false;
 
     // カテゴリーアーカイブページ
     if (is_category($noindex_ids)) {
-      $should_noindex = true;
+      return true;
     }
-    // 投稿ページ
-    elseif (is_single() && has_category($noindex_ids)) {
-      $should_noindex = true;
+
+    // 個別ページ（is_single() は固定ページで false になるため、is_singular() で判定する）
+    if (is_singular()) {
+      return has_category($noindex_ids, get_queried_object_id());
     }
+
     // タグ・年月日アーカイブ（指定カテゴリーの投稿を含む）
-    elseif (is_archive() && !is_category()) {
+    if (is_archive() && !is_category()) {
       global $wp_query;
       if (!empty($wp_query->posts)) {
         foreach ($wp_query->posts as $post) {
           if (has_category($noindex_ids, $post)) {
-            $should_noindex = true;
-            break;
+            return true;
           }
         }
       }
     }
 
-    if ($should_noindex) {
+    return false;
+  }
+
+  /**
+   * wp_robots フィルター（WordPress 5.7 以降）：本体の robots meta に noindex を追加
+   *
+   * @param array $robots
+   * @return array
+   */
+  public function filter_wp_robots($robots)
+  {
+    if ($this->should_noindex()) {
+      $robots['noindex'] = true;
+    }
+    return $robots;
+  }
+
+  /**
+   * フロントエンドで noindex meta タグを出力（WordPress 5.7 未満用）
+   */
+  public function output_noindex_meta()
+  {
+    if ($this->should_noindex()) {
       echo '<meta name="robots" content="noindex" />' . "\n";
     }
   }
@@ -1103,10 +1088,9 @@ class CategoryColorPicker
 
     // 相対輝度を計算
     $luminance = (0.299 * $r + 0.587 * $g + 0.114 * $b) / 255;
-    $threshold = (float) get_option('category_color_luminance_threshold', 0.6);
 
-    // 輝度が閾値より高い場合は暗いテキスト、そうでない場合は白テキスト
-    return $luminance > $threshold ? 'var(--c-base-900, hsl(224, 6%, 13%))' : '#FFF';
+    // 輝度が0.6より高い場合は暗いテキスト、そうでない場合は白テキスト
+    return $luminance > 0.6 ? 'var(--c-base-900, hsl(224, 6%, 13%))' : '#FFF';
   }
 }
 

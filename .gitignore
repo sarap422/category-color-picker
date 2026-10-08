@@ -80,6 +80,7 @@ dump.sql
 # ────────────── ༚༶⊰⟡⊱༶༚༺
 .git/
 gitignore/
+gitignone/
 
 
 # ────────────── ༚༶⊰⟡⊱༶༚༺
@@ -88,6 +89,7 @@ gitignore/
 node_modules/
 .npmignore
 npmignore/
+npmignone/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
